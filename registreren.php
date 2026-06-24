@@ -9,36 +9,27 @@ if (isIngelogd()) {
 
 $fout = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $gebruikersnaam = trim($_POST['gebruikersnaam'] ?? '');
-    $wachtwoord = $_POST['wachtwoord'] ?? '';
-    $wachtwoordHerhalen = $_POST['wachtwoord_herhalen'] ?? '';
+if (isset($_POST['registreren'])) {
+    $gebruikersnaam = trim($_POST['gebruikersnaam']);
+    $wachtwoord = $_POST['wachtwoord'];
 
-    if (strlen($gebruikersnaam) < 3 || strlen($gebruikersnaam) > 50) {
-        $fout = 'De gebruikersnaam moet tussen 3 en 50 tekens lang zijn.';
-    } elseif (strlen($wachtwoord) < 6) {
-        $fout = 'Het wachtwoord moet minimaal 6 tekens lang zijn.';
-    } elseif ($wachtwoord !== $wachtwoordHerhalen) {
-        $fout = 'De wachtwoorden zijn niet hetzelfde.';
+    if (empty($gebruikersnaam) || empty($wachtwoord)) {
+        $fout = 'Vul alle velden in.';
     } else {
-        $controle = $conn->prepare('SELECT id FROM gebruikers WHERE gebruikersnaam = ?');
-        $controle->bind_param('s', $gebruikersnaam);
-        $controle->execute();
+        $wachtwoord = password_hash($wachtwoord, PASSWORD_DEFAULT);
 
-        if ($controle->get_result()->num_rows > 0) {
-            $fout = 'Deze gebruikersnaam bestaat al.';
-        } else {
-            $wachtwoordHash = password_hash($wachtwoord, PASSWORD_DEFAULT);
-            $stmt = $conn->prepare('INSERT INTO gebruikers (gebruikersnaam, wachtwoord) VALUES (?, ?)');
-            $stmt->bind_param('ss', $gebruikersnaam, $wachtwoordHash);
+        $stmt = $conn->prepare(
+            'INSERT IGNORE INTO gebruikers (gebruikersnaam, wachtwoord) VALUES (?, ?)'
+        );
+        $stmt->bind_param('ss', $gebruikersnaam, $wachtwoord);
+        $stmt->execute();
 
-            if ($stmt->execute()) {
-                header('Location: login.php');
-                exit;
-            }
-
-            $fout = 'Registreren is mislukt. Probeer het opnieuw.';
+        if ($stmt->affected_rows === 1) {
+            header('Location: login.php');
+            exit;
         }
+
+        $fout = 'Deze gebruikersnaam bestaat al.';
     }
 }
 ?>
@@ -59,28 +50,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <form method="post">
         <p>
             <label for="gebruikersnaam">Gebruikersnaam:</label><br>
-            <input
-                type="text"
-                name="gebruikersnaam"
-                id="gebruikersnaam"
-                minlength="3"
-                maxlength="50"
-                value="<?php echo htmlspecialchars($_POST['gebruikersnaam'] ?? ''); ?>"
-                required
-            >
+            <input type="text" name="gebruikersnaam" id="gebruikersnaam" required>
         </p>
         <p>
             <label for="wachtwoord">Wachtwoord:</label><br>
-            <input type="password" name="wachtwoord" id="wachtwoord" minlength="6" required>
+            <input type="password" name="wachtwoord" id="wachtwoord" required>
         </p>
-        <p>
-            <label for="wachtwoord_herhalen">Wachtwoord herhalen:</label><br>
-            <input type="password" name="wachtwoord_herhalen" id="wachtwoord_herhalen" minlength="6" required>
-        </p>
-        <button type="submit">Registreren</button>
+        <button type="submit" name="registreren">Registreren</button>
     </form>
 
     <p>Al een account? <a href="login.php">Log hier in</a>.</p>
 </body>
 </html>
-
