@@ -1,5 +1,8 @@
 <?php
 include 'db.php';
+include 'auth.php';
+
+verplichtInloggen();
 
 $bestanden = $conn->query("SELECT public_id, naam, grootte, upload_datum FROM bestanden ORDER BY upload_datum DESC");
 ?>
@@ -11,6 +14,11 @@ $bestanden = $conn->query("SELECT public_id, naam, grootte, upload_datum FROM be
     <title>Bestanden uploaden en downloaden</title>
 </head>
 <body>
+    <p>
+        Ingelogd als <strong><?php echo htmlspecialchars($_SESSION['gebruikersnaam']); ?></strong>
+        | <a href="uitloggen.php">Uitloggen</a>
+    </p>
+
     <h2>Bestand uploaden</h2>
 
     <form action="upload.php" method="post" enctype="multipart/form-data">

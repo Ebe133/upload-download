@@ -1,5 +1,8 @@
 <?php
 include 'db.php';
+include 'auth.php';
+
+verplichtInloggen();
 
 if (!isset($_POST["submit"])) {
     header("Location: index.php");
